@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Available Scenarios{% endblock %}
+
+{% block content %}
+<h1>Available Scenarios</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Date</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for scenario in scenarios %}
+        <tr>
+            <td>{{ scenario.id }}</td>
+            <td>{{ scenario.scenario_name or ("Scenario " ~ scenario.id) }}</td>
+            <td>{{ scenario.date }}</td>
+            <td>
+                <a href="/view-scenario?scenario_id={{ scenario.id }}">Run</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

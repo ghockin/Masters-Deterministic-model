@@ -1,0 +1,627 @@
+{% extends "base.html" %}
+
+{% block title %}{{ sim.scenario_name or "Simulation" }}{% endblock %}
+
+{% block content %}
+
+<h1>{{ sim.scenario_name or "Simulation" }}</h1>
+
+<div class="brief-panel">
+    <p>{{ sim.mission_brief }}</p>
+    <p>{{ sim.intel_summary }}</p>
+</div>
+
+<div class="controls" id="play-controls">
+
+    <button onclick="startSimulation()">
+        Play
+    </button>
+
+    <button onclick="stopSimulation()">
+        Pause
+    </button>
+
+    <button onclick="resetSim()">
+        Reset
+    </button>
+
+</div>
+
+<div class="simulation-note">
+    <strong>Note:</strong>
+    Each tick represents
+    <strong>1 simulated minute</strong>.
+</div>
+
+<h2 id="minutes">
+    Minutes passed: {{ sim.tick_count }}
+</h2>
+
+<div id="status" class="status-panel"></div>
+
+<hr>
+
+<!-- =========================
+     SPEED SIMULATION PANEL
+========================= -->
+
+<div class="speed-sweep-panel">
+
+    <button
+        class="section-toggle"
+        onclick="toggleSpeedPanel()"
+        type="button"
+    >
+        ▶ Speed Simulations
+    </button>
+
+    <div
+        id="speed-panel-content"
+        class="collapsible-content closed"
+    >
+
+        <p>
+            PDF Speed Range:
+            {{ sim.ship_speed_min }}
+            -
+            {{ sim.ship_speed_max }}
+            knots
+        </p>
+
+        <button onclick="prepareSpeedSweep()">
+            Generate Simulations
+        </button>
+
+        <div id="speed-sweep-results"></div>
+
+    </div>
+
+</div>
+
+<hr>
+
+<!-- =========================
+     SEA PLOT
+========================= -->
+
+<div class="sea-plot" id="simulation-view">
+
+    <div id="safe-zone" class="safe-zone">
+        <span>SAFE ZONE</span>
+    </div>
+
+    <!-- FRIENDLY SHIP -->
+
+    <img
+        id="friendly-unit"
+        class="plot-unit friendly-unit"
+        src="/static/images/friendly.png"
+        alt="Friendly Ship"
+    >
+
+    <!-- ENEMY TORPEDO -->
+
+    <img
+        id="enemy-unit"
+        class="plot-unit enemy-unit"
+        src="/static/images/enemy.png"
+        alt="Enemy Torpedo"
+    >
+
+</div>
+
+<!-- =========================
+     TELEMETRY
+========================= -->
+
+<div class="telemetry-panel">
+
+    <div class="telemetry-card">
+
+        <h3>Friendly Vessel</h3>
+
+        <p id="friendly-position"></p>
+        <p id="friendly-knots"></p>
+        <p id="friendly-bearing"></p>
+        <p id="friendly-distance"></p>
+        <p id="friendly-destination"></p>
+
+    </div>
+
+    <div class="telemetry-card">
+
+        <h3>Enemy / Torpedo</h3>
+
+        <p id="enemy-position"></p>
+        <p id="enemy-knots"></p>
+        <p id="enemy-distance"></p>
+
+    </div>
+
+    <div class="telemetry-card">
+
+        <h3>Separation</h3>
+
+        <p id="separation"></p>
+
+    </div>
+
+</div>
+
+<!-- =========================
+     MESSAGE PANEL
+========================= -->
+
+<div class="message-panel">
+
+    <h3>Simulation Messages</h3>
+
+    <div id="message-log" class="message-log">
+        <p>No messages yet.</p>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+
+let running = false;
+let interval = null;
+
+/* =========================
+   LOAD INITIAL STATE
+========================= */
+
+async function loadInitialState() {
+
+    const response = await fetch("/state");
+    const state = await response.json();
+
+    render(state);
+}
+
+/* =========================
+   MAIN RENDER
+========================= */
+
+function render(state) {
+
+    updateMinutes(state);
+    updateStatus(state);
+    updateTelemetry(state);
+    updateMessageLog(state);
+    updateSeaPlot(state);
+}
+
+/* =========================
+   MINUTES
+========================= */
+
+function updateMinutes(state) {
+
+    const minutes =
+        document.getElementById("minutes");
+
+    if (minutes) {
+
+        minutes.innerText =
+            `Minutes passed: ${state.tick}`;
+    }
+}
+
+/* =========================
+   STATUS
+========================= */
+
+function updateStatus(state) {
+
+    const status =
+        document.getElementById("status");
+
+    if (!status) return;
+
+    if (state.destroyed) {
+
+        status.innerText =
+            "💥 Mission Failed: Torpedo Intercepted Ship";
+
+    } else if (state.finished) {
+
+        status.innerText =
+            "✅ Mission Success: Ship Reached Safe Zone";
+
+    } else {
+
+        status.innerText =
+            state.result || "Simulation running";
+    }
+}
+
+/* =========================
+   TELEMETRY
+========================= */
+
+function updateTelemetry(state) {
+
+    document.getElementById(
+        "friendly-position"
+    ).innerText =
+        `Position: ${state.ship_x_nm} NM, ${state.ship_y_nm} NM`;
+
+    document.getElementById(
+        "friendly-knots"
+    ).innerText =
+        `Speed: ${state.friendly_speed} knots`;
+
+    document.getElementById(
+        "friendly-bearing"
+    ).innerText =
+        `Bearing: ${state.bearing}°`;
+
+    document.getElementById(
+        "friendly-distance"
+    ).innerText =
+        `Distance to safe zone: ${state.distance_to_safe_zone_nm} NM`;
+
+    document.getElementById(
+        "friendly-destination"
+    ).innerText =
+        `Safe zone: ${state.safe_zone_x_nm} NM, ${state.safe_zone_y_nm} NM`;
+
+    document.getElementById(
+        "enemy-position"
+    ).innerText =
+        `Position: ${state.torpedo_x_nm} NM, ${state.torpedo_y_nm} NM`;
+
+    document.getElementById(
+        "enemy-knots"
+    ).innerText =
+        `Speed: ${state.enemy_speed} knots`;
+
+    document.getElementById(
+        "enemy-distance"
+    ).innerText =
+        `Bearing to ship: ${state.torpedo_bearing}°`;
+
+    document.getElementById(
+        "separation"
+    ).innerText =
+        `${state.separation_nm} NM`;
+}
+
+/* =========================
+   MESSAGE LOG
+========================= */
+
+function updateMessageLog(state) {
+
+    const messageLog =
+        document.getElementById("message-log");
+
+    if (!messageLog) return;
+
+    if (!state.current_message) return;
+
+    /* prevent duplicate messages */
+    const lastMessage =
+        messageLog.lastElementChild?.innerText;
+
+    if (lastMessage === state.current_message) {
+        return;
+    }
+
+    const message =
+        document.createElement("p");
+
+    message.innerText =
+        state.current_message;
+
+    messageLog.appendChild(message);
+
+    /* auto scroll to newest message */
+    messageLog.scrollTop =
+        messageLog.scrollHeight;
+}
+
+/* =========================
+   SEA PLOT
+========================= */
+
+function updateSeaPlot(state) {
+
+    const friendly =
+        document.getElementById("friendly-unit");
+
+    const enemy =
+        document.getElementById("enemy-unit");
+
+    const safeZone =
+        document.getElementById("safe-zone");
+
+    const minX = state.plot_bounds.min_x;
+    const maxX = state.plot_bounds.max_x;
+
+    const minY = state.plot_bounds.min_y;
+    const maxY = state.plot_bounds.max_y;
+
+    function scaleX(x) {
+
+        return (
+            ((x - minX) / (maxX - minX)) * 100
+        );
+    }
+
+    function scaleY(y) {
+
+        return (
+            100 - (((y - minY) / (maxY - minY)) * 100)
+        );
+    }
+
+    friendly.style.left =
+        `${scaleX(state.ship_x_nm)}%`;
+
+    friendly.style.top =
+        `${scaleY(state.ship_y_nm)}%`;
+
+    enemy.style.left =
+        `${scaleX(state.torpedo_x_nm)}%`;
+
+    enemy.style.top =
+        `${scaleY(state.torpedo_y_nm)}%`;
+
+    safeZone.style.left =
+        `${scaleX(state.safe_zone_x_nm)}%`;
+
+    safeZone.style.top =
+        `${scaleY(state.safe_zone_y_nm)}%`;
+
+    friendly.style.transform =
+        "translate(-50%, -50%)";
+
+    enemy.style.transform =
+        "translate(-50%, -50%)";
+
+    safeZone.style.transform =
+        "translate(-50%, -50%)";
+}
+
+/* =========================
+   START
+========================= */
+
+function startSimulation() {
+
+    if (running) return;
+
+    document.getElementById(
+        "simulation-view"
+    ).scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+
+    running = true;
+
+    interval = setInterval(async () => {
+
+        const response =
+            await fetch("/tick", {
+                method: "POST"
+            });
+
+        const state =
+            await response.json();
+
+        render(state);
+
+        if (state.finished) {
+            stopSimulation();
+        }
+
+    }, 500);
+}
+
+/* =========================
+   STOP
+========================= */
+
+function stopSimulation() {
+
+    running = false;
+
+    if (interval) {
+        clearInterval(interval);
+    }
+}
+
+/* =========================
+   RESET
+========================= */
+
+function resetSim() {
+
+    fetch("/reset", {
+        method: "POST"
+    })
+    .then(() => location.reload());
+}
+
+/* =========================
+   COLLAPSIBLE SPEED PANEL
+========================= */
+
+function toggleSpeedPanel() {
+
+    const content =
+        document.getElementById(
+            "speed-panel-content"
+        );
+
+    const button =
+        document.querySelector(
+            ".section-toggle"
+        );
+
+    content.classList.toggle("closed");
+
+    if (
+        content.classList.contains(
+            "closed"
+        )
+    ) {
+
+        button.innerText =
+            "▶ Speed Simulations";
+
+    } else {
+
+        button.innerText =
+            "▼ Speed Simulations";
+    }
+}
+
+/* =========================
+   GENERATE SPEED SWEEP
+========================= */
+
+async function prepareSpeedSweep() {
+
+    const resultsDiv =
+        document.getElementById(
+            "speed-sweep-results"
+        );
+
+    resultsDiv.innerHTML =
+        "<p>Generating simulations...</p>";
+
+    const formData = new FormData();
+
+    formData.append(
+        "scenario_id",
+        "{{ sim.scenario['id'] }}"
+    );
+
+    const response = await fetch(
+        "/prepare-speed-sweep",
+        {
+            method: "POST",
+            body: formData
+        }
+    );
+
+    const result = await response.json();
+
+    let html = `
+        <h3>${result.message}</h3>
+    `;
+
+    html += `
+        <table border="1"
+               cellpadding="6"
+               cellspacing="0">
+    `;
+
+    html += `
+        <thead>
+            <tr>
+                <th>Ship Speed</th>
+                <th>Minutes</th>
+                <th>Result</th>
+                <th>Load</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+
+    result.results.forEach(row => {
+
+        html += `
+            <tr>
+                <td>${row.speed} knots</td>
+                <td>${row.ticks}</td>
+                <td>${row.result}</td>
+                <td>
+                    <button
+                        onclick="
+                            playSpeedSimulation(
+                                ${row.speed}
+                            )
+                        "
+                    >
+                        Load
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `
+        </tbody>
+        </table>
+    `;
+
+    resultsDiv.innerHTML = html;
+}
+
+/* =========================
+   LOAD SPEED SIMULATION
+========================= */
+
+async function playSpeedSimulation(speed) {
+
+    stopSimulation();
+
+    const formData = new FormData();
+
+    formData.append(
+        "scenario_id",
+        "{{ sim.scenario['id'] }}"
+    );
+
+    formData.append(
+        "speed",
+        speed
+    );
+
+    await fetch(
+        "/play-speed-simulation",
+        {
+            method: "POST",
+            body: formData
+        }
+    );
+
+    const response =
+        await fetch("/state");
+
+    const state =
+        await response.json();
+
+    render(state);
+
+    document.getElementById(
+        "status"
+    ).innerHTML =
+        `Loaded ${speed} knot simulation. Press <span style="color: limegreen; font-weight: bold;">Play</span> to run.`;
+
+    document.getElementById(
+        "play-controls"
+    ).scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+}
+
+/* =========================
+   INITIAL LOAD
+========================= */
+
+loadInitialState();
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Scenario Tool - Home{% endblock %}
+
+{% block content %}
+
+<h1>Scenario Tool</h1>
+
+<div class="page-buttons">
+
+    <!-- Download scenario button -->
+    <button type="button" id="download-btn">Download scenario template</button>
+
+    <!-- PDF upload -->
+    <form id="upload-form" enctype="multipart/form-data" class="file-upload-form">
+		<div class="file-upload-wrapper">
+			<label for="pdf" class="custom-file-button">Choose PDF</label>
+			<button type="submit" class="upload-btn">Upload PDF</button>
+		</div>
+		<input type="file" name="pdf" id="pdf" accept="application/pdf" required>
+        <span id="file-name"></span>
+    </form>
+
+    <!-- pdfplumber extraction button -->
+    <button type="button" id="extract-plumber">Extract PDF with pdfplumber</button>
+
+	<a href="/scenarios">
+		<button type="button">View Scenarios</button>
+	</a>
+</div>
+
+<!-- Single message container for all messages -->
+<ul id="page-messages" class="flash-messages"></ul>
+
+<script>
+const messagesContainer = document.getElementById("page-messages");
+const uploadForm = document.getElementById("upload-form");  // <-- define here
+const fileInput = document.getElementById("pdf");
+const fileName = document.getElementById("file-name");
+
+// Utility to show a message
+function showMessage(text, category="info", autoHide=true) {
+    messagesContainer.innerHTML = "";
+    const li = document.createElement("li");
+    li.className = category;
+    li.textContent = text;
+    messagesContainer.appendChild(li);
+    if (autoHide) setTimeout(() => li.remove(), 5000);
+}
+
+// 1️⃣ Download scenario template
+document.getElementById("download-btn")?.addEventListener("click", () => {
+    showMessage("Scenario template is downloading to your default download folder.", "info", false);
+
+    const link = document.createElement("a");
+    link.href = "/download-scenario-template";
+    link.download = "scenario_template.pdf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+
+// 2️⃣ Show selected PDF file name
+fileInput?.addEventListener("change", () => {
+    fileName.textContent = fileInput.files[0]?.name || "";
+});
+
+// 3️⃣ Handle PDF upload via AJAX
+document.getElementById("upload-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(uploadForm);
+    const response = await fetch("/upload-scenario", { method: "POST", body: formData });
+    const result = await response.json();
+    showMessage(result.message, result.category);
+});
+
+// 4️⃣ OCR extraction button
+document.getElementById("extract-ocr")?.addEventListener("click", async () => {
+    const pdfFile = fileInput.files[0];
+    if (!pdfFile) return showMessage("Please select a PDF first!", "error");
+
+    showMessage("Extracting text using OCR...", "info");
+
+    const formData = new FormData();
+    formData.append("pdf", pdfFile);
+
+    const response = await fetch("/extract-ocr", { method: "POST", body: formData });
+    const result = await response.json();
+    showMessage(result.message, result.category);
+});
+
+// 5️⃣ pdfplumber extraction button
+document.getElementById("extract-plumber")?.addEventListener("click", async () => {
+    const pdfFile = fileInput.files[0];
+    if (!pdfFile) return showMessage("Please select a PDF first!", "error");
+
+    showMessage("Extracting text using pdfplumber...", "info");
+
+    const formData = new FormData();
+    formData.append("pdf", pdfFile);
+
+    const response = await fetch("/upload-scenario-pdfplumber", {
+        method: "POST",
+        body: formData
+    });
+
+    const result = await response.json(); // <-- make sure route returns JSON
+    showMessage(result.message, result.category); // <-- same as OCR
+});
+</script>
+
+{% endblock %}

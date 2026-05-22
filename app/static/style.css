@@ -1,0 +1,679 @@
+/* =========================
+   GLOBAL
+========================= */
+
+body {
+    margin: 0;
+    padding: 0;
+
+    background:
+        radial-gradient(circle at top, #10263f 0%, #08131f 55%, #040b12 100%);
+
+    color: #ffffff;
+
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+
+    min-height: 100vh;
+}
+
+/* tactical overlay */
+body::before {
+    content: "";
+
+    position: fixed;
+    inset: 0;
+
+    pointer-events: none;
+
+    background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+
+    background-size: 40px 40px;
+
+    opacity: 0.2;
+}
+
+/* =========================
+   LINKS
+========================= */
+
+a {
+    color: white;
+    text-decoration: none;
+}
+
+a:visited {
+    color: white;
+}
+
+a:hover {
+    color: #d7efff;
+}
+
+a:active {
+    color: white;
+}
+
+/* =========================
+   PAGE LAYOUT
+========================= */
+
+.page-content {
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+
+    padding: 40px 20px;
+
+    gap: 25px;
+}
+
+/* =========================
+   HEADINGS
+========================= */
+
+h1, h2, h3 {
+    color: #ffffff;
+
+    text-transform: uppercase;
+
+    letter-spacing: 2px;
+
+    margin: 10px 0;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+button,
+.custom-file-button,
+.upload-btn,
+a button {
+    background:
+        linear-gradient(to bottom, #123a5c, #0a2438);
+
+    border: 1px solid #4ea7ff;
+
+    color: white;
+
+    padding: 12px 20px;
+
+    border-radius: 6px;
+
+    font-weight: bold;
+
+    letter-spacing: 1px;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+
+    box-shadow:
+        0 0 8px rgba(0,128,255,0.2),
+        inset 0 0 6px rgba(255,255,255,0.05);
+}
+
+button:hover,
+.custom-file-button:hover,
+.upload-btn:hover,
+a button:hover {
+    background:
+        linear-gradient(to bottom, #1a4f7c, #10314d);
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 0 14px rgba(0,180,255,0.4);
+}
+
+/* =========================
+   PLAY BUTTON
+========================= */
+
+button[onclick="startSimulation()"] {
+    background:
+        linear-gradient(to bottom, #14532d, #0b3b1d);
+
+    border: 1px solid #4cff88;
+
+    color: white;
+
+    box-shadow:
+        0 0 12px rgba(0,255,120,0.35);
+}
+
+button[onclick="startSimulation()"]:hover {
+    background:
+        linear-gradient(to bottom, #1c6b3b, #14532d);
+
+    box-shadow:
+        0 0 20px rgba(0,255,120,0.7);
+}
+
+/* =========================
+   PAUSE BUTTON
+========================= */
+
+button[onclick="stopSimulation()"] {
+    background:
+        linear-gradient(to bottom, #7a5a12, #4f3908);
+
+    border: 1px solid #ffca55;
+
+    color: white;
+}
+
+/* =========================
+   RESET BUTTON
+========================= */
+
+button[onclick="resetSim()"] {
+    background:
+        linear-gradient(to bottom, #6b1d1d, #3d0f0f);
+
+    border: 1px solid #ff6b6b;
+
+    color: white;
+}
+
+/* =========================
+   PAGE BUTTONS
+========================= */
+
+.page-buttons {
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+
+    gap: 22px;
+
+    width: 100%;
+    max-width: 420px;
+}
+
+/* =========================
+   FILE INPUT
+========================= */
+
+/* hide default browser choose file */
+.file-upload-form input[type="file"] {
+    display: none;
+}
+
+.file-upload-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* custom upload button */
+.custom-file-button {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    min-width: 180px;
+}
+
+/* file name text */
+#file-name {
+    color: rgba(255,255,255,0.75);
+
+    font-size: 14px;
+
+    min-width: 180px;
+}
+
+/* =========================
+   FLASH MESSAGES
+========================= */
+
+.flash-messages {
+    list-style: none;
+
+    padding: 0;
+    margin: 0;
+}
+
+.flash-messages li {
+    padding: 12px 18px;
+
+    border-radius: 6px;
+
+    font-weight: bold;
+
+    border-left: 4px solid;
+
+    background: rgba(255,255,255,0.06);
+}
+
+.flash-messages li.success {
+    border-color: #4cff88;
+    color: #d4ffe3;
+}
+
+.flash-messages li.error {
+    border-color: #ff5b5b;
+    color: #ffd5d5;
+}
+
+.flash-messages li.info {
+    border-color: #63c2ff;
+    color: #d7efff;
+}
+
+/* =========================
+   TABLES
+========================= */
+
+table {
+    border-collapse: collapse;
+
+    width: 95%;
+
+    background: rgba(4,12,20,0.95);
+
+    border: 1px solid #2f6d99;
+}
+
+thead {
+    background: #10314d;
+}
+
+th, td {
+    border: 1px solid rgba(126,200,255,0.15);
+
+    padding: 10px;
+
+    text-align: left;
+
+    color: white;
+}
+
+tr:nth-child(even) {
+    background: rgba(255,255,255,0.03);
+}
+
+/* =========================
+   GRID
+========================= */
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(10, 50px);
+    grid-auto-rows: 50px;
+    gap: 4px;
+    padding: 20px;
+    background: rgba(5,12,18,0.95);
+    border: 2px solid #2f6d99;
+    border-radius: 12px;
+}
+
+/* =========================
+   GRID TILES
+========================= */
+
+.tile {
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
+    min-height: 50px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    box-sizing: border-box;
+    overflow: hidden;
+
+    background: linear-gradient(to bottom right, #0f2233, #122c42);
+    border: 1px solid rgba(126,200,255,0.35);
+
+    color: rgba(255,255,255,0.75);
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.tile:hover {
+    border-color: rgba(126,200,255,0.6);
+
+    box-shadow:
+        inset 0 0 10px rgba(126,200,255,0.15);
+}
+
+/* =========================
+   TARGET TILE
+========================= */
+
+.friendly-target {
+    background:
+        radial-gradient(circle,
+        rgba(255,230,0,0.35),
+        rgba(255,180,0,0.08)) !important;
+
+    border: 2px solid #ffd500 !important;
+
+    box-shadow:
+        0 0 15px rgba(255,220,0,0.4);
+}
+
+/* =========================
+   FRIENDLY TRAIL
+========================= */
+
+.friendly-trail {
+    box-shadow:
+        inset 0 0 0 3px rgba(0,255,120,0.55);
+}
+
+/* =========================
+   UNIT IMAGES
+========================= */
+
+.unit {
+    object-fit: contain;
+    display: block;
+}
+
+/* =========================
+   MESSAGE PANEL
+========================= */
+
+.message-panel {
+    width: 700px;
+
+    max-width: 90vw;
+
+    background:
+        rgba(3,10,18,0.9);
+
+    border: 1px solid #2f6d99;
+
+    border-radius: 10px;
+
+    padding: 18px;
+
+    box-shadow:
+        0 0 18px rgba(0,120,255,0.15);
+}
+
+/* =========================
+   MESSAGE LOG
+========================= */
+
+#message-log {
+
+    height: 220px;
+
+    overflow-y: auto;
+
+    background: #000;
+
+    border: 1px solid #1d4768;
+
+    padding: 12px;
+
+    color: #67ff9b;
+
+    font-family: Consolas, monospace;
+
+    border-radius: 6px;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 6px;
+}
+
+#message-log p {
+
+    margin: 0;
+
+    padding: 6px 8px;
+
+    background:
+        rgba(0,255,120,0.06);
+
+    border-left:
+        2px solid rgba(0,255,120,0.5);
+
+    border-radius: 4px;
+}
+
+/* =========================
+   STATUS TEXT
+========================= */
+
+#status {
+    font-size: 20px;
+
+    font-weight: bold;
+
+    margin-top: 10px;
+}
+
+/* =========================
+   TORPEDO SEARCH EFFECT
+========================= */
+
+.torpedo-searching {
+    animation: pulseEnemy 0.8s infinite alternate;
+}
+
+@keyframes pulseEnemy {
+    from {
+        opacity: 0.3;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1.08);
+    }
+}
+
+/* =========================
+   SEA PLOT
+========================= */
+
+.sea-plot {
+
+    position: relative;
+
+    width: 800px;
+    height: 450px;
+
+    max-width: 95vw;
+
+    overflow: hidden;
+
+    border: 2px solid #3d9cff;
+
+    border-radius: 12px;
+
+    background:
+        radial-gradient(
+            circle at top,
+            rgba(0,140,255,0.18),
+            transparent 45%
+        ),
+
+        linear-gradient(
+            to bottom,
+            #0d3b66 0%,
+            #0a2e4f 35%,
+            #07233b 70%,
+            #041521 100%
+        );
+
+    box-shadow:
+        0 0 25px rgba(0,140,255,0.35),
+        inset 0 0 30px rgba(255,255,255,0.04);
+}
+
+/* tactical grid overlay */
+
+.sea-plot::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    pointer-events: none;
+
+    background-image:
+        linear-gradient(
+            rgba(255,255,255,0.08) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,0.08) 1px,
+            transparent 1px
+        );
+
+    background-size: 50px 50px;
+}
+
+/* =========================
+   SAFE ZONE
+========================= */
+
+.safe-zone {
+
+    position: absolute;
+
+    width: 90px;
+    height: 90px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(0,255,120,0.30) 0%,
+            rgba(0,255,120,0.15) 45%,
+            rgba(0,255,120,0.05) 75%,
+            transparent 100%
+        );
+
+    border: 2px solid rgba(0,255,120,0.7);
+
+    box-shadow:
+        0 0 18px rgba(0,255,120,0.35),
+        inset 0 0 12px rgba(255,255,255,0.08);
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    z-index: 5;
+
+    backdrop-filter: blur(2px);
+}
+
+/* safe zone label */
+
+.safe-zone span {
+
+    color: #d7ffe5;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    letter-spacing: 1px;
+
+    text-shadow:
+        0 0 8px rgba(0,255,120,0.5);
+
+    pointer-events: none;
+}
+
+/* =========================
+   PLOT UNITS
+========================= */
+
+.plot-unit {
+
+    position: absolute;
+
+    object-fit: contain;
+
+    display: block;
+
+    z-index: 10;
+
+    transform:
+        translate(-50%, -50%);
+}
+
+/* FRIENDLY SHIP */
+
+#friendly-unit {
+
+    width: 120px;
+
+    height: auto;
+}
+
+/* ENEMY TORPEDO */
+
+#enemy-unit {
+
+    width: 90px;
+
+    height: auto;
+}
+
+/* =========================
+   COLLAPSIBLE SPEED PANEL
+========================= */
+
+.speed-sweep-panel {
+    width: 800px;
+    max-width: 95vw;
+
+    background: rgba(3, 10, 18, 0.85);
+
+    border: 1px solid #2f6d99;
+    border-radius: 10px;
+
+    padding: 16px;
+
+    box-shadow: 0 0 18px rgba(0,120,255,0.15);
+}
+
+.section-toggle {
+    width: 100%;
+
+    text-align: left;
+
+    background: linear-gradient(to bottom, #123a5c, #0a2438);
+
+    border: 1px solid #4ea7ff;
+
+    color: white;
+
+    font-size: 16px;
+
+    padding: 14px 18px;
+}
+
+.collapsible-content {
+    margin-top: 15px;
+
+    display: block;
+}
+
+.collapsible-content.closed {
+    display: none;
+}
