@@ -10,16 +10,23 @@
         <tr>
             <th>ID</th>
             <th>Name</th>
+            <th>Type</th>
             <th>Date</th>
             <th>Action</th>
         </tr>
     </thead>
-
     <tbody>
         {% for scenario in scenarios %}
         <tr>
             <td>{{ scenario.id }}</td>
             <td>{{ scenario.scenario_name or ("Scenario " ~ scenario.id) }}</td>
+            <td>
+                {% if scenario.is_mutation == 1 %}
+                    Mutation
+                {% else %}
+                    Original
+                {% endif %}
+            </td>
             <td>{{ scenario.date }}</td>
             <td>
                 <a href="/view-scenario?scenario_id={{ scenario.id }}">Run</a>

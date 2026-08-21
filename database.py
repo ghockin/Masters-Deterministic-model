@@ -38,8 +38,15 @@ def init_db():
         torpedo_start_y_nm REAL,
         torpedo_speed REAL,
 
-        safe_zone_x_nm REAL,
-        safe_zone_y_nm REAL,
+        objective_point_distance_nm REAL,
+        objective_point_bearing_around_ship REAL,
+        objective_point_multiplier INTEGER,
+        objective_points_json TEXT,
+
+        objective_point_x_nm REAL,
+        objective_point_y_nm REAL,
+        
+        countermeasure_trigger_distance_nm REAL,
 
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
@@ -78,10 +85,15 @@ def insert_scenario(data):
             torpedo_start_x_nm,
             torpedo_start_y_nm,
             torpedo_speed,
-            safe_zone_x_nm,
-            safe_zone_y_nm
+            objective_point_distance_nm,
+            objective_point_bearing_around_ship,
+            objective_point_multiplier,
+            objective_points_json,
+            objective_point_x_nm,
+            objective_point_y_nm,
+            countermeasure_trigger_distance_nm
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         first(data.get("scenario_name"), "Unnamed Scenario"),
         first(data.get("date"), ""),
@@ -91,17 +103,24 @@ def insert_scenario(data):
         first(data.get("enemy_class"), "Unknown"),
         first(data.get("friendly_class"), "Unknown"),
 
-        float(first(data.get("ship_start_x_nm"), 40)),
-        float(first(data.get("ship_start_y_nm"), 20)),
+        float(first(data.get("ship_start_x_nm"), 20)),
+        float(first(data.get("ship_start_y_nm"), 40)),
         float(first(data.get("ship_speed_min"), 20)),
-        float(first(data.get("ship_speed_max"), 30)),
+        float(first(data.get("ship_speed_max"), 40)),
 
         float(first(data.get("torpedo_start_x_nm"), 0)),
         float(first(data.get("torpedo_start_y_nm"), 0)),
-        float(first(data.get("torpedo_speed"), 200)),
+        float(first(data.get("torpedo_speed"), 30)),
 
-        float(first(data.get("safe_zone_x_nm"), 100)),
-        float(first(data.get("safe_zone_y_nm"), 0)),
+        float(first(data.get("objective_point_distance_nm"), 10)),
+        float(first(data.get("objective_point_bearing_around_ship"), 360)),
+        int(first(data.get("objective_point_multiplier"), 6)),
+        first(data.get("objective_points_json"), "[]"),
+
+        float(first(data.get("objective_point_x_nm"), 20)),
+        float(first(data.get("objective_point_y_nm"), 50)),
+        
+        int(first(data.get("countermeasure_trigger_distance_nm"), 20)),
     ))
 
     conn.commit()

@@ -1,679 +1,387 @@
-/* =========================
-   GLOBAL
-========================= */
-
-body {
-    margin: 0;
-    padding: 0;
-
-    background:
-        radial-gradient(circle at top, #10263f 0%, #08131f 55%, #040b12 100%);
-
-    color: #ffffff;
-
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-
-    min-height: 100vh;
-}
-
-/* tactical overlay */
-body::before {
-    content: "";
-
-    position: fixed;
-    inset: 0;
-
-    pointer-events: none;
-
-    background-image:
-        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-
-    background-size: 40px 40px;
-
-    opacity: 0.2;
-}
-
-/* =========================
-   LINKS
-========================= */
-
-a {
-    color: white;
-    text-decoration: none;
-}
-
-a:visited {
-    color: white;
-}
-
-a:hover {
-    color: #d7efff;
-}
-
-a:active {
-    color: white;
-}
-
-/* =========================
-   PAGE LAYOUT
-========================= */
-
-.page-content {
-    display: flex;
-    flex-direction: column;
-
-    align-items: center;
-
-    padding: 40px 20px;
-
-    gap: 25px;
-}
-
-/* =========================
-   HEADINGS
-========================= */
-
-h1, h2, h3 {
-    color: #ffffff;
-
-    text-transform: uppercase;
-
-    letter-spacing: 2px;
-
-    margin: 10px 0;
-}
-
-/* =========================
-   BUTTONS
-========================= */
-
-button,
-.custom-file-button,
-.upload-btn,
-a button {
-    background:
-        linear-gradient(to bottom, #123a5c, #0a2438);
-
-    border: 1px solid #4ea7ff;
-
-    color: white;
-
-    padding: 12px 20px;
-
-    border-radius: 6px;
-
-    font-weight: bold;
-
-    letter-spacing: 1px;
-
-    cursor: pointer;
-
-    transition: all 0.2s ease;
-
-    box-shadow:
-        0 0 8px rgba(0,128,255,0.2),
-        inset 0 0 6px rgba(255,255,255,0.05);
-}
-
-button:hover,
-.custom-file-button:hover,
-.upload-btn:hover,
-a button:hover {
-    background:
-        linear-gradient(to bottom, #1a4f7c, #10314d);
-
-    transform: translateY(-1px);
-
-    box-shadow:
-        0 0 14px rgba(0,180,255,0.4);
-}
-
-/* =========================
-   PLAY BUTTON
-========================= */
-
-button[onclick="startSimulation()"] {
-    background:
-        linear-gradient(to bottom, #14532d, #0b3b1d);
-
-    border: 1px solid #4cff88;
-
-    color: white;
-
-    box-shadow:
-        0 0 12px rgba(0,255,120,0.35);
-}
-
-button[onclick="startSimulation()"]:hover {
-    background:
-        linear-gradient(to bottom, #1c6b3b, #14532d);
-
-    box-shadow:
-        0 0 20px rgba(0,255,120,0.7);
-}
-
-/* =========================
-   PAUSE BUTTON
-========================= */
-
-button[onclick="stopSimulation()"] {
-    background:
-        linear-gradient(to bottom, #7a5a12, #4f3908);
-
-    border: 1px solid #ffca55;
-
-    color: white;
-}
-
-/* =========================
-   RESET BUTTON
-========================= */
-
-button[onclick="resetSim()"] {
-    background:
-        linear-gradient(to bottom, #6b1d1d, #3d0f0f);
-
-    border: 1px solid #ff6b6b;
-
-    color: white;
-}
-
-/* =========================
-   PAGE BUTTONS
-========================= */
-
+/* Wrap all main buttons/forms on index page */
 .page-buttons {
     display: flex;
     flex-direction: column;
-
     align-items: center;
-
-    gap: 22px;
-
+    gap: 25px;
+    margin-top: 40px;
     width: 100%;
-    max-width: 420px;
+    max-width: 400px;
 }
 
-/* =========================
-   FILE INPUT
-========================= */
+/* Buttons inside page-buttons and custom file button */
+.page-buttons button,
+.custom-file-button {
+    width: 100%;
+    max-width: 250px;
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: none;
+    background-color: #155724;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.2s ease;
+}
 
-/* hide default browser choose file */
+.page-buttons button:hover,
+.custom-file-button:hover {
+    background-color: #0b3d12;
+}
+
+/* Display selected file name neatly */
+#file-name {
+    display: inline-block;
+    margin-left: 10px;
+    font-size: 14px;
+    color: #333;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Hide default file input */
 .file-upload-form input[type="file"] {
     display: none;
 }
 
+/* Wrap label + upload button horizontally with spacing */
 .file-upload-wrapper {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 15px;
+    margin-bottom: 10px;
 }
 
-/* custom upload button */
-.custom-file-button {
-    display: inline-flex;
-
-    align-items: center;
-    justify-content: center;
-
-    min-width: 180px;
+/* Upload button */
+.file-upload-wrapper .upload-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: none;
+    background-color: #155724;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
-/* file name text */
-#file-name {
-    color: rgba(255,255,255,0.75);
-
-    font-size: 14px;
-
-    min-width: 180px;
+.file-upload-wrapper .upload-btn:hover {
+    background-color: #0b3d12;
 }
 
-/* =========================
-   FLASH MESSAGES
-========================= */
+/* OCR button */
+.page-buttons .ocr-btn {
+    background-color: #6c757d !important;
+    color: white !important;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
 
+.page-buttons .ocr-btn:hover {
+    background-color: #5a6268 !important;
+}
+
+#extract-plumber {
+    width: 100%;
+    max-width: 250px;
+    padding: 12px 20px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#extract-plumber:hover {
+    background-color: #0056b3;
+}
+
+/* Flash-style messages */
 .flash-messages {
     list-style: none;
-
     padding: 0;
-    margin: 0;
+    margin: 30px 0 0 0;
+    text-align: center;
 }
 
 .flash-messages li {
-    padding: 12px 18px;
-
-    border-radius: 6px;
-
+    display: inline-block;
+    padding: 10px 15px;
+    margin: 5px 0;
+    border-radius: 5px;
     font-weight: bold;
-
-    border-left: 4px solid;
-
-    background: rgba(255,255,255,0.06);
 }
 
-.flash-messages li.success {
-    border-color: #4cff88;
-    color: #d4ffe3;
+.flash-messages li.success { background-color: #d4edda; color: #155724; }
+.flash-messages li.error   { background-color: #f8d7da; color: #721c24; }
+.flash-messages li.info    { background-color: #d1ecf1; color: #0c5460; }
+
+/* Page content */
+.page-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    gap: 25px;
 }
 
-.flash-messages li.error {
-    border-color: #ff5b5b;
-    color: #ffd5d5;
+/* Grid wrapper */
+.grid-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    max-width: fit-content;
+    margin: 20px auto;
 }
 
-.flash-messages li.info {
-    border-color: #63c2ff;
-    color: #d7efff;
-}
-
-/* =========================
-   TABLES
-========================= */
-
-table {
-    border-collapse: collapse;
-
-    width: 95%;
-
-    background: rgba(4,12,20,0.95);
-
-    border: 1px solid #2f6d99;
-}
-
-thead {
-    background: #10314d;
-}
-
-th, td {
-    border: 1px solid rgba(126,200,255,0.15);
-
-    padding: 10px;
-
-    text-align: left;
-
-    color: white;
-}
-
-tr:nth-child(even) {
-    background: rgba(255,255,255,0.03);
-}
-
-/* =========================
-   GRID
-========================= */
-
+/* Grid container */
 .grid-container {
     display: grid;
     grid-template-columns: repeat(10, 50px);
     grid-auto-rows: 50px;
-    gap: 4px;
-    padding: 20px;
-    background: rgba(5,12,18,0.95);
-    border: 2px solid #2f6d99;
-    border-radius: 12px;
+    gap: 5px;
 }
 
-/* =========================
-   GRID TILES
-========================= */
+/* Grid title */
+h1 {
+    text-align: center;
+    margin-top: 20px;
+}
 
+/* Tile styling */
 .tile {
     width: 50px;
     height: 50px;
-    min-width: 50px;
-    min-height: 50px;
-
     display: flex;
     justify-content: center;
     align-items: center;
-
-    box-sizing: border-box;
-    overflow: hidden;
-
-    background: linear-gradient(to bottom right, #0f2233, #122c42);
-    border: 1px solid rgba(126,200,255,0.35);
-
-    color: rgba(255,255,255,0.75);
+    background-color: #d4edda;
+    border: 2px solid #155724;
+    font-weight: bold;
     font-size: 10px;
-    font-weight: bold;
+    border-radius: 5px;
+    position: relative;
+    box-sizing: border-box;
 }
 
-.tile:hover {
-    border-color: rgba(126,200,255,0.6);
+/* Checkerboard effect */
+.tile:nth-child(even) { background-color: #c8e6c9; }
+.tile:nth-child(odd)  { background-color: #d4edda; }
 
-    box-shadow:
-        inset 0 0 10px rgba(126,200,255,0.15);
-}
-
-/* =========================
-   TARGET TILE
-========================= */
-
+/* Friendly target tile */
 .friendly-target {
-    background:
-        radial-gradient(circle,
-        rgba(255,230,0,0.35),
-        rgba(255,180,0,0.08)) !important;
-
-    border: 2px solid #ffd500 !important;
-
-    box-shadow:
-        0 0 15px rgba(255,220,0,0.4);
+    background-color: yellow !important;
 }
 
-/* =========================
-   FRIENDLY TRAIL
-========================= */
-
+/* Friendly trail tiles */
 .friendly-trail {
-    box-shadow:
-        inset 0 0 0 3px rgba(0,255,120,0.55);
+    box-shadow: inset 0 0 0 4px red;
 }
 
-/* =========================
-   UNIT IMAGES
-========================= */
-
+/* Unit images */
 .unit {
+    width: 100%;
+    height: 100%;
     object-fit: contain;
-    display: block;
 }
 
-/* =========================
-   MESSAGE PANEL
-========================= */
 
-.message-panel {
-    width: 700px;
-
-    max-width: 90vw;
-
-    background:
-        rgba(3,10,18,0.9);
-
-    border: 1px solid #2f6d99;
-
-    border-radius: 10px;
-
-    padding: 18px;
-
-    box-shadow:
-        0 0 18px rgba(0,120,255,0.15);
-}
-
-/* =========================
-   MESSAGE LOG
-========================= */
-
-#message-log {
-
-    height: 220px;
-
+.message-log {
+    width: 300px;
+    height: 200px;
     overflow-y: auto;
-
-    background: #000;
-
-    border: 1px solid #1d4768;
-
-    padding: 12px;
-
-    color: #67ff9b;
-
-    font-family: Consolas, monospace;
-
-    border-radius: 6px;
-
-    display: flex;
-    flex-direction: column;
-
-    gap: 6px;
+    border: 1px solid white;
+    padding: 10px;
+    background: black;
+    color: lime;
+    font-family: monospace;
 }
-
-#message-log p {
-
-    margin: 0;
-
-    padding: 6px 8px;
-
-    background:
-        rgba(0,255,120,0.06);
-
-    border-left:
-        2px solid rgba(0,255,120,0.5);
-
-    border-radius: 4px;
-}
-
-/* =========================
-   STATUS TEXT
-========================= */
-
-#status {
-    font-size: 20px;
-
-    font-weight: bold;
-
-    margin-top: 10px;
-}
-
-/* =========================
-   TORPEDO SEARCH EFFECT
-========================= */
 
 .torpedo-searching {
-    animation: pulseEnemy 0.8s infinite alternate;
+    animation: fade-torpedo 0.8s infinite alternate;
 }
 
-@keyframes pulseEnemy {
+@keyframes fade-torpedo {
     from {
-        opacity: 0.3;
-        transform: scale(0.95);
+        opacity: 0.25;
     }
-
     to {
         opacity: 1;
-        transform: scale(1.08);
     }
 }
 
-/* =========================
-   SEA PLOT
-========================= */
+
+.no-search {
+    animation: none !important;
+    opacity: 1 !important;
+}
+/* Final objective-point navy styling */
+body {
+    margin: 0;
+    background: #061426;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+a { color: white; }
+
+button {
+    background: #155724;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 4px;
+}
+
+button:hover { filter: brightness(1.15); }
+
+.page-content {
+    min-height: 100vh;
+    justify-content: flex-start;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.brief-panel, .status-panel, .simulation-note, .speed-sweep-panel, .telemetry-card, .message-panel, .charts-panel {
+    width: min(980px, 95vw);
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 12px;
+    padding: 14px;
+    box-sizing: border-box;
+}
+
+.controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
 .sea-plot {
-
     position: relative;
 
-    width: 800px;
-    height: 450px;
+    width: 1000px;
+    height: 1000px;
 
     max-width: 95vw;
+    max-height: 95vw;
 
-    overflow: hidden;
+    margin: 30px auto;
 
-    border: 2px solid #3d9cff;
-
+    border: 3px solid #7ec8ff;
     border-radius: 12px;
 
     background:
-        radial-gradient(
-            circle at top,
-            rgba(0,140,255,0.18),
-            transparent 45%
-        ),
-
         linear-gradient(
-            to bottom,
-            #0d3b66 0%,
-            #0a2e4f 35%,
-            #07233b 70%,
-            #041521 100%
-        );
-
-    box-shadow:
-        0 0 25px rgba(0,140,255,0.35),
-        inset 0 0 30px rgba(255,255,255,0.04);
-}
-
-/* tactical grid overlay */
-
-.sea-plot::before {
-
-    content: "";
-
-    position: absolute;
-
-    inset: 0;
-
-    pointer-events: none;
-
-    background-image:
-        linear-gradient(
-            rgba(255,255,255,0.08) 1px,
+            rgba(255, 255, 255, 0.12) 1px,
             transparent 1px
         ),
         linear-gradient(
             90deg,
-            rgba(255,255,255,0.08) 1px,
+            rgba(255, 255, 255, 0.12) 1px,
             transparent 1px
-        );
+        ),
+        #2f7fb8;
 
-    background-size: 50px 50px;
+    background-size: 10% 10%;
+
+    overflow: hidden;
 }
 
-/* =========================
-   SAFE ZONE
-========================= */
-
-.safe-zone {
-
+.plot-unit {
     position: absolute;
+    width: 45px;
+    height: 45px;
+    object-fit: contain;
+    z-index: 5;
+}
 
-    width: 90px;
-    height: 90px;
+
+
+.enemy-unit { width: 34px; height: 34px; }
+
+.objective-point {
+    position: absolute;
+    width: 110px;
+    height: 110px;
 
     border-radius: 50%;
 
-    background:
-        radial-gradient(
-            circle,
-            rgba(0,255,120,0.30) 0%,
-            rgba(0,255,120,0.15) 45%,
-            rgba(0,255,120,0.05) 75%,
-            transparent 100%
-        );
-
-    border: 2px solid rgba(0,255,120,0.7);
-
-    box-shadow:
-        0 0 18px rgba(0,255,120,0.35),
-        inset 0 0 12px rgba(255,255,255,0.08);
-
     display: flex;
-
     align-items: center;
     justify-content: center;
 
-    z-index: 5;
-
-    backdrop-filter: blur(2px);
-}
-
-/* safe zone label */
-
-.safe-zone span {
-
-    color: #d7ffe5;
-
-    font-size: 11px;
-
-    font-weight: bold;
-
-    letter-spacing: 1px;
-
-    text-shadow:
-        0 0 8px rgba(0,255,120,0.5);
-
-    pointer-events: none;
-}
-
-/* =========================
-   PLOT UNITS
-========================= */
-
-.plot-unit {
-
-    position: absolute;
-
-    object-fit: contain;
-
-    display: block;
-
-    z-index: 10;
-
-    transform:
-        translate(-50%, -50%);
-}
-
-/* FRIENDLY SHIP */
-
-#friendly-unit {
-
-    width: 120px;
-
-    height: auto;
-}
-
-/* ENEMY TORPEDO */
-
-#enemy-unit {
-
-    width: 90px;
-
-    height: auto;
-}
-
-/* =========================
-   COLLAPSIBLE SPEED PANEL
-========================= */
-
-.speed-sweep-panel {
-    width: 800px;
-    max-width: 95vw;
-
-    background: rgba(3, 10, 18, 0.85);
-
-    border: 1px solid #2f6d99;
-    border-radius: 10px;
-
-    padding: 16px;
-
-    box-shadow: 0 0 18px rgba(0,120,255,0.15);
-}
-
-.section-toggle {
-    width: 100%;
-
-    text-align: left;
-
-    background: linear-gradient(to bottom, #123a5c, #0a2438);
-
-    border: 1px solid #4ea7ff;
-
     color: white;
+    font-weight: bold;
+    font-size: 13px;
+    text-align: center;
 
-    font-size: 16px;
-
-    padding: 14px 18px;
+    z-index: 2;
 }
 
-.collapsible-content {
-    margin-top: 15px;
+.selected-objective-point {
+    background: rgba(0, 255, 100, 0.28);
+    border: 3px solid rgba(0, 255, 100, 0.95);
+}
 
+.rejected-objective-point {
+    background: rgba(255, 0, 0, 0.18);
+    border: 2px solid rgba(255, 0, 0, 0.65);
+}
+
+.telemetry-panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px;
+    width: min(980px, 95vw);
+}
+
+.message-log {
+    width: 100%;
+    min-height: 180px;
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid rgba(255,255,255,0.25);
+    padding: 10px;
+    background: #020b12;
+    color: lime;
+    font-family: Consolas, monospace;
+    box-sizing: border-box;
+}
+
+.collapsible-content.closed { display: none; }
+
+table {
+    border-collapse: collapse;
+    width: min(980px, 95vw);
+    background: rgba(255,255,255,0.08);
+}
+
+th, td {
+    border: 1px solid rgba(255,255,255,0.22);
+    padding: 8px;
+    color: white;
+}
+
+th { background: rgba(255,255,255,0.12); }
+
+.charts-panel canvas {
     display: block;
+    max-width: 100%;
+    margin: 14px auto;
+    background: #04111f;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 8px;
 }
 
-.collapsible-content.closed {
-    display: none;
-}
+.chart-help { color: #d8ecff; }

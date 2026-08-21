@@ -1,0 +1,2 @@
+scenario_id,scenario_name,minute,ship_x_nm,ship_y_nm,torpedo_x_nm,torpedo_y_nm,selected_objective_point_id,selected_objective_point_bearing,objective_point_x_nm,objective_point_y_nm,separation_nm,distance_to_objective_point_nm,ship_speed_knots,torpedo_speed_knots,countermeasure_active,countermeasure_timer,torpedo_lost_contact_timer,result,message
+3,Scenario Data - OPERATION TRIDENT,0,20.0,40.0,0.0,0.0,1,0.0,20.0,140.0,44.72,100.0,20.0,60.0,N,0,0,RUNNING,Minute 0: Simulation started. Best objective point selected: Zone 1 at bearing 0.0°.

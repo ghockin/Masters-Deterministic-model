@@ -1,50 +1,21 @@
 {% extends "base.html" %}
-
 {% block title %}Database View{% endblock %}
-
 {% block content %}
 <h1>Database View</h1>
-
-<table border="1" cellpadding="8" cellspacing="0">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Mutation</th>
-            <th>Date</th>
-            <th>Mission Brief</th>
-            <th>Intel Summary</th>
-            <th>Start</th>
-            <th>Destination</th>
-            <th>Enemy Seen</th>
-            <th>Enemy Predicted</th>
-            <th>Enemy Class</th>
-            <th>Friendly Class</th>
-            <th>Enemy Speed</th>
-            <th>Friendly Speed</th>
-            <th>Friendly Evasion Interval</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for scenario in scenarios %}
-        <tr>
-            <td>{{ scenario.id }}</td>
-            <td>{{ scenario.scenario_name }}</td>
-            <td>{{ scenario.is_mutation }}</td>
-            <td>{{ scenario.date }}</td>
-            <td>{{ scenario.mission_brief }}</td>
-            <td>{{ scenario.intel_summary }}</td>
-            <td>{{ scenario.start_coord }}</td>
-            <td>{{ scenario.destination_coord }}</td>
-            <td>{{ scenario.enemy_last_seen }}</td>
-            <td>{{ scenario.enemy_predicted }}</td>
-            <td>{{ scenario.enemy_class }}</td>
-            <td>{{ scenario.friendly_class }}</td>
-            <td>{{ scenario.enemy_speed }}</td>
-            <td>{{ scenario.friendly_speed }}</td>
-            <td>{{ scenario.friendly_evasion_interval }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
+<table>
+<thead><tr><th>ID</th><th>Name</th><th>Date</th><th>Ship Start</th><th>Torpedo Start</th><th>Safe Zone</th><th>Ship Speed Range</th><th>Torpedo Speed</th><th>Action</th></tr></thead>
+<tbody>
+{% for s in scenarios %}
+<tr>
+<td>{{ s.id }}</td><td>{{ s.scenario_name }}</td><td>{{ s.date }}</td>
+<td>{{ s.ship_start_x_nm }}, {{ s.ship_start_y_nm }} NM</td>
+<td>{{ s.torpedo_start_x_nm }}, {{ s.torpedo_start_y_nm }} NM</td>
+<td>{{ s.safe_zone_x_nm }}, {{ s.safe_zone_y_nm }} NM</td>
+<td>{{ s.ship_speed_min }} - {{ s.ship_speed_max }} knots</td>
+<td>{{ s.torpedo_speed }} knots</td>
+<td><a href="/view-scenario?scenario_id={{ s.id }}">Run</a></td>
+</tr>
+{% endfor %}
+</tbody>
 </table>
 {% endblock %}

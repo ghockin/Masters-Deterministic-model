@@ -1,6 +1,72 @@
 import re
+import json
+import math
+from pathlib import Path
 from database import insert_scenario
 
+
+BASE_DIR = Path(__file__).resolve().parent
+OBJECTIVE_POINT_DOCUMENT = BASE_DIR / "objective_points_generated.txt"
+
+# =========================
+# PATTERNS
+# =========================
+
+PATTERNS = {
+    "ship_start": [
+        r"commence transit from position\s*\(([-\d\.]+)\s*,\s*([-\d\.]+)\)",
+        r"starting position\s*\(([-\d\.]+)\s*,\s*([-\d\.]+)\)",
+        r"start(?:ing)? coordinates?\s*[:\-]?\s*([-\d\.]+)[,\s]+([-\d\.]+)",
+        r"position is\s*\(([-\d\.]+)\s*,\s*([-\d\.]+)\)"
+    ],
+
+    "speed_range": [
+        r"speed between\s*([-\d\.]+)\s*and\s*([-\d\.]+)",
+        r"speed range\s*[:\-]?\s*([-\d\.]+)\s*[-–]\s*([-\d\.]+)",
+        r"max speed\s*([-\d\.]+).*?min speed\s*([-\d\.]+)"
+    ],
+
+    "countermeasure_distance": [
+        r"within\s*([-\d\.]+)\s*nautical miles",
+        r"trigger distance\s*[:\-]?\s*([-\d\.]+)",
+        r"countermeasures.*?([-\d\.]+)\s*NM"
+    ],
+
+    "torpedo_position": [
+        r"torpedo position.*?\(([-\d\.]+)\s*,\s*([-\d\.]+)\)",
+        r"last known position.*?([-\d\.]+)[,\s]+([-\d\.]+)"
+    ],
+
+    "torpedo_speed": [
+        r"torpedo speed.*?([-\d\.]+)",
+        r"speed of torpedo.*?([-\d\.]+)"
+    ],
+
+    "objective_distance": [
+        r"objective point distance\s*[:\-]?\s*([-\d\.]+)",
+        r"objective distance\s*([-\d\.]+)",
+        r"distance to objective.*?([-\d\.]+)"
+    ],
+
+    "objective_bearing": [
+        r"objective point bearing\s*[:\-]?\s*([-\d\.]+)",
+        r"bearing.*?([-\d\.]+)\s*degrees",
+        r"bearing.*?([-\d\.]+)"
+    ],
+
+    "objective_quantity": [
+        r"objective point quantity\s*[:\-]?\s*([-\d\.]+)",
+        r"number of objective points\s*([-\d\.]+)",
+        r"objective points.*?([-\d\.]+)"
+    ]
+}
+
+
+
+
+# =========================
+# UTILITIES
+# =========================
 
 def clean_text(value):
     if not value:
@@ -14,19 +80,88 @@ def get_match(pattern, text, default=None, flags=re.IGNORECASE | re.DOTALL):
 
 
 def to_float(value, default=0):
-    if value is None:
-        return default
     try:
         return float(value)
     except (TypeError, ValueError):
         return default
 
 
+def to_int(value, default=0):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def extract_with_patterns(pattern_list, text, count=1, default=None):
+    for pattern in pattern_list:
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        if match:
+            groups = match.groups()
+            if count == 1:
+                return to_float(groups[0], default)
+            return [to_float(g, default) for g in groups]
+    return default
+
+
+
+# =========================
+# Objective Point GENERATION
+# =========================
+
+def create_objective_points(ship_x, ship_y, distance, bearing_range, quantity):
+    objective_points = []
+
+    if quantity <= 0:
+        quantity = 1
+
+    angle_step = bearing_range / quantity
+
+    for i in range(quantity):
+        bearing = i * angle_step
+        radians = math.radians(bearing)
+
+        x = ship_x + math.sin(radians) * distance
+        y = ship_y + math.cos(radians) * distance
+
+        objective_points.append({
+            "id": i + 1,
+            "bearing": round(bearing, 2),
+            "x": round(x, 2),
+            "y": round(y, 2)
+        })
+
+    return objective_points
+
+
+def write_objective_point_document(scenario_name, objective_points):
+    with open(OBJECTIVE_POINT_DOCUMENT, "w", encoding="utf-8") as f:
+        f.write("Objective point Document\n")
+        f.write(f"Scenario: {scenario_name}\n")
+        f.write("=" * 50 + "\n\n")
+
+        for zone in objective_points:
+            f.write(
+                f"objective_point {zone['id']} | "
+                f"Bearing: {zone['bearing']}° | "
+                f"X: {zone['x']} NM | "
+                f"Y: {zone['y']} NM\n"
+            )
+
+
+# =========================
+# MAIN PARSER
+# =========================
+
 def populate_data_frame(file_path):
     with open(file_path, "r", encoding="utf-8") as file:
         text = file.read()
 
     text = text.replace("\r\n", "\n").replace("\r", "\n")
+
+    # -------------------------
+    # BASIC HEADER INFO
+    # -------------------------
 
     opord_name = get_match(
         r"^\s*OPORD:\s*([^\n\r]+)",
@@ -65,6 +200,10 @@ def populate_data_frame(file_path):
     intel_summary = clean_text(intel_raw)
     operation_properties = clean_text(operation_raw)
 
+    # -------------------------
+    # ENEMY + FRIENDLY INFO
+    # -------------------------
+
     enemy_class = get_match(
         r"Class:\s*([A-Za-z0-9\s\-]+)",
         intel_raw,
@@ -79,19 +218,63 @@ def populate_data_frame(file_path):
 
     friendly_class = friendly_match.group(1).strip() if friendly_match else "Unknown"
 
-    ship_start_x_nm = to_float(get_match(r"Ship start X\s*\(NM\)\s*:\s*(-?\d+(?:\.\d+)?)", operation_raw, 40), 40)
-    ship_start_y_nm = to_float(get_match(r"Ship start Y\s*\(NM\)\s*:\s*(-?\d+(?:\.\d+)?)", operation_raw, 20), 20)
+    # =====================================================
+    # NAVAL ORDER PARSING (MAIN EXTRACTION LOGIC)
+    # =====================================================
 
-    ship_speed_min = to_float(get_match(r"Ship Speed Minimum\s*\(Knots\)\s*:\s*(-?\d+(?:\.\d+)?)", operation_raw, 20), 20)
-    ship_speed_max = to_float(get_match(r"Ship Speed Maximum\s*\(Knots\)\s*:\s*(-?\d+(?:\.\d+)?)", operation_raw, 30), 30)
+    ship_coords = extract_with_patterns(PATTERNS["ship_start"], text, count=2, default=[20, 40])
+    ship_start_x_nm, ship_start_y_nm = ship_coords
 
-    torpedo_start_x_nm = to_float(get_match(r"Torpedo start X\s*\(NM\)\s*:\s*(-?\d+(?:\.\d+)?)", operation_raw, 0), 0)
-    torpedo_start_y_nm = to_float(get_match(r"Torpedo start Y\s*\(NM\)\s*:\s*(-?\d+(?:\.\d+)?)", operation_raw, 0), 0)
+    speed_range = extract_with_patterns(PATTERNS["speed_range"], text, count=2, default=[20, 30])
+    ship_speed_min, ship_speed_max = speed_range
 
-    torpedo_speed = to_float(get_match(r"Torpedo speed\s*\(Knots\)\s*:\s*(-?\d+(?:\.\d+)?)", operation_raw, 200), 200)
+    countermeasure_trigger_distance_nm = extract_with_patterns(
+        PATTERNS["countermeasure_distance"], text, default=4
+    )
 
-    safe_zone_x_nm = to_float(get_match(r"Safe zone X\s*\(NM\)\s*:\s*(-?\d+(?:\.\d+)?)", operation_raw, 100), 100)
-    safe_zone_y_nm = to_float(get_match(r"Safe zone Y\s*\(NM\)\s*:\s*(-?\d+(?:\.\d+)?)", operation_raw, 0), 0)
+
+    torpedo_coords = extract_with_patterns(PATTERNS["torpedo_position"], text, count=2, default=[0, 0])
+    torpedo_start_x_nm, torpedo_start_y_nm = torpedo_coords
+
+
+    torpedo_speed = extract_with_patterns(PATTERNS["torpedo_speed"], text, default=60)
+
+
+    # -------------------------
+    # Objective point
+    # -------------------------
+
+    objective_point_distance_nm = extract_with_patterns(
+        PATTERNS["objective_distance"], text, default=100
+    )
+
+
+    objective_point_bearing_around_ship = extract_with_patterns(
+        PATTERNS["objective_bearing"], text, default=360
+    )
+
+
+    objective_point_multiplier = int(extract_with_patterns(
+        PATTERNS["objective_quantity"], text, default=6
+    ))
+
+
+    objective_points = create_objective_points(
+        ship_start_x_nm,
+        ship_start_y_nm,
+        objective_point_distance_nm,
+        objective_point_bearing_around_ship,
+        objective_point_multiplier
+    )
+
+    objective_point_x_nm = objective_points[0]["x"]
+    objective_point_y_nm = objective_points[0]["y"]
+
+    write_objective_point_document(scenario_name, objective_points)
+
+    # -------------------------
+    # BUILD OUTPUT DATASET
+    # -------------------------
 
     data = {
         "scenario_name": [scenario_name],
@@ -99,6 +282,7 @@ def populate_data_frame(file_path):
         "mission_brief": [mission_brief],
         "intel_summary": [intel_summary],
         "operation_properties": [operation_properties],
+
         "enemy_class": [enemy_class],
         "friendly_class": [friendly_class],
 
@@ -111,13 +295,20 @@ def populate_data_frame(file_path):
         "torpedo_start_y_nm": [torpedo_start_y_nm],
         "torpedo_speed": [torpedo_speed],
 
-        "safe_zone_x_nm": [safe_zone_x_nm],
-        "safe_zone_y_nm": [safe_zone_y_nm],
+        "objective_point_distance_nm": [objective_point_distance_nm],
+        "objective_point_bearing_around_ship": [objective_point_bearing_around_ship],
+        "objective_point_multiplier": [objective_point_multiplier],
+        "objective_points_json": [json.dumps(objective_points)],
+
+        "objective_point_x_nm": [objective_point_x_nm],
+        "objective_point_y_nm": [objective_point_y_nm],
+
+        "countermeasure_trigger_distance_nm": [countermeasure_trigger_distance_nm],
     }
 
     print("\n--- PARSED DATA ---")
     for key, value in data.items():
-        print(f"{key:<30}: {value[0]}")
+        print(f"{key:<35}: {value[0]}")
     print("--- END ---\n")
 
     insert_scenario(data)

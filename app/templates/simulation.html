@@ -3,7 +3,6 @@
 {% block title %}{{ sim.scenario_name or "Simulation" }}{% endblock %}
 
 {% block content %}
-
 <h1>{{ sim.scenario_name or "Simulation" }}</h1>
 
 <div class="brief-panel">
@@ -12,323 +11,130 @@
 </div>
 
 <div class="controls" id="play-controls">
-
-    <button onclick="startSimulation()">
-        Play
-    </button>
-
-    <button onclick="stopSimulation()">
-        Pause
-    </button>
-
-    <button onclick="resetSim()">
-        Reset
-    </button>
-
+    <button onclick="startSimulation()">Play</button>
+    <button onclick="stopSimulation()">Pause</button>
+    <button onclick="resetSim()">Reset</button>
 </div>
 
-<div class="simulation-note">
-    <strong>Note:</strong>
-    Each tick represents
-    <strong>1 simulated minute</strong>.
-</div>
-
-<h2 id="minutes">
-    Minutes passed: {{ sim.tick_count }}
-</h2>
-
+<div class="simulation-note"><strong>Note:</strong> each tick represents <strong>1 simulated minute</strong>.</div>
+<h2 id="minutes">Minutes passed: {{ sim.tick_count }}</h2>
 <div id="status" class="status-panel"></div>
 
 <hr>
 
-<!-- =========================
-     SPEED SIMULATION PANEL
-========================= -->
-
 <div class="speed-sweep-panel">
-
-    <button
-        class="section-toggle"
-        onclick="toggleSpeedPanel()"
-        type="button"
-    >
-        ▶ Speed Simulations
-    </button>
-
-    <div
-        id="speed-panel-content"
-        class="collapsible-content closed"
-    >
-
-        <p>
-            PDF Speed Range:
-            {{ sim.ship_speed_min }}
-            -
-            {{ sim.ship_speed_max }}
-            knots
-        </p>
-
-        <button onclick="prepareSpeedSweep()">
-            Generate Simulations
-        </button>
-
+    <button class="section-toggle" onclick="toggleSpeedPanel()" type="button">▶ Speed Simulations</button>
+    <div id="speed-panel-content" class="collapsible-content closed">
+        <p>PDF Speed Range: {{ sim.ship_speed_min }} - {{ sim.ship_speed_max }} knots</p>
+		<button onclick="prepareSpeedSweep()">Show Simulations</button>
+		<a href="/download-all-logs/{{ sim.scenario['id'] }}">
+			<button type="button">Download All Logs</button>
+		</a>
+		<a href="/download-objective-point-analysis/{{ sim.scenario['id'] }}">
+			<button type="button">
+				Download Objective point Analysis for this simulation
+			</button>
+		</a>
         <div id="speed-sweep-results"></div>
-
     </div>
-
 </div>
 
 <hr>
 
-<!-- =========================
-     SEA PLOT
-========================= -->
-
 <div class="sea-plot" id="simulation-view">
-
-    <div id="safe-zone" class="safe-zone">
-        <span>SAFE ZONE</span>
-    </div>
-
-    <!-- FRIENDLY SHIP -->
-
-    <img
-        id="friendly-unit"
-        class="plot-unit friendly-unit"
-        src="/static/images/friendly.png"
-        alt="Friendly Ship"
-    >
-
-    <!-- ENEMY TORPEDO -->
-
-    <img
-        id="enemy-unit"
-        class="plot-unit enemy-unit"
-        src="/static/images/enemy.png"
-        alt="Enemy Torpedo"
-    >
-
+	<div id="objective-points-layer"></div>
+    <img id="friendly-unit" class="plot-unit friendly-unit" src="/static/images/friendly.png" alt="Friendly Ship">
+    <img id="enemy-unit" class="plot-unit enemy-unit" src="/static/images/enemy.png" alt="Enemy Torpedo">
 </div>
-
-<!-- =========================
-     TELEMETRY
-========================= -->
 
 <div class="telemetry-panel">
-
-    <div class="telemetry-card">
-
-        <h3>Friendly Vessel</h3>
-
-        <p id="friendly-position"></p>
-        <p id="friendly-knots"></p>
-        <p id="friendly-bearing"></p>
-        <p id="friendly-distance"></p>
-        <p id="friendly-destination"></p>
-
-    </div>
-
-    <div class="telemetry-card">
-
-        <h3>Enemy / Torpedo</h3>
-
-        <p id="enemy-position"></p>
-        <p id="enemy-knots"></p>
-        <p id="enemy-distance"></p>
-
-    </div>
-
-    <div class="telemetry-card">
-
-        <h3>Separation</h3>
-
-        <p id="separation"></p>
-
-    </div>
-
+    <div class="telemetry-card"><h3>Friendly Vessel</h3><p id="friendly-position"></p><p id="friendly-knots"></p><p id="friendly-bearing"></p><p id="friendly-distance"></p><p id="friendly-destination"></p></div>
+    <div class="telemetry-card"><h3>Enemy / Torpedo</h3><p id="enemy-position"></p><p id="enemy-knots"></p><p id="enemy-distance"></p></div>
+    <div class="telemetry-card"><h3>Separation</h3><p id="separation"></p></div>
 </div>
 
-<!-- =========================
-     MESSAGE PANEL
-========================= -->
+<div class="charts-panel">
+    <h3>Movement Charts</h3>
+    <p class="chart-help">Time is shown on the x-axis. The y-axis shows position in nautical miles.</p>
+    <canvas id="x-chart" width="760" height="260"></canvas>
+    <canvas id="y-chart" width="760" height="260"></canvas>
+</div>
 
 <div class="message-panel">
-
     <h3>Simulation Messages</h3>
+
+	<p id="countermeasure-status">Countermeasure: OFF</p>
+	<p id="torpedo-contact-status">Torpedo Contact: LOCKED</p>
 
     <div id="message-log" class="message-log">
         <p>No messages yet.</p>
     </div>
-
 </div>
-
 {% endblock %}
 
 {% block scripts %}
-
 <script>
-
 let running = false;
 let interval = null;
 
-/* =========================
-   LOAD INITIAL STATE
-========================= */
-
 async function loadInitialState() {
-
     const response = await fetch("/state");
     const state = await response.json();
-
     render(state);
 }
 
-/* =========================
-   MAIN RENDER
-========================= */
-
 function render(state) {
-
     updateMinutes(state);
     updateStatus(state);
     updateTelemetry(state);
     updateMessageLog(state);
     updateSeaPlot(state);
+    drawCharts(state.trajectory || []);
+	document.getElementById("countermeasure-status").textContent =
+		`Countermeasure: ${
+			state.countermeasure_active ? "ACTIVE" : "OFF"
+		} | Timer: ${state.countermeasure_timer}`;
+
+	document.getElementById("torpedo-contact-status").textContent =
+		`Torpedo Contact: ${
+			state.torpedo_lost_contact_timer > 0
+				? "LOST"
+				: "LOCKED"
+		} | Search Timer: ${state.torpedo_lost_contact_timer}`;
 }
 
-/* =========================
-   MINUTES
-========================= */
-
-function updateMinutes(state) {
-
-    const minutes =
-        document.getElementById("minutes");
-
-    if (minutes) {
-
-        minutes.innerText =
-            `Minutes passed: ${state.tick}`;
-    }
-}
-
-/* =========================
-   STATUS
-========================= */
+function updateMinutes(state) { document.getElementById("minutes").innerText = `Minutes passed: ${state.tick}`; }
 
 function updateStatus(state) {
-
-    const status =
-        document.getElementById("status");
-
-    if (!status) return;
-
-    if (state.destroyed) {
-
-        status.innerText =
-            "💥 Mission Failed: Torpedo Intercepted Ship";
-
-    } else if (state.finished) {
-
-        status.innerText =
-            "✅ Mission Success: Ship Reached Safe Zone";
-
-    } else {
-
-        status.innerText =
-            state.result || "Simulation running";
-    }
+    const status = document.getElementById("status");
+    if (state.destroyed) status.innerText = "💥 Mission Failed: Torpedo Intercepted Ship";
+    else if (state.finished) status.innerText = "✅ Mission Success: Ship Reached Objective point";
+    else status.innerText = state.result || "Simulation running";
 }
-
-/* =========================
-   TELEMETRY
-========================= */
 
 function updateTelemetry(state) {
-
-    document.getElementById(
-        "friendly-position"
-    ).innerText =
-        `Position: ${state.ship_x_nm} NM, ${state.ship_y_nm} NM`;
-
-    document.getElementById(
-        "friendly-knots"
-    ).innerText =
-        `Speed: ${state.friendly_speed} knots`;
-
-    document.getElementById(
-        "friendly-bearing"
-    ).innerText =
-        `Bearing: ${state.bearing}°`;
-
-    document.getElementById(
-        "friendly-distance"
-    ).innerText =
-        `Distance to safe zone: ${state.distance_to_safe_zone_nm} NM`;
-
-    document.getElementById(
-        "friendly-destination"
-    ).innerText =
-        `Safe zone: ${state.safe_zone_x_nm} NM, ${state.safe_zone_y_nm} NM`;
-
-    document.getElementById(
-        "enemy-position"
-    ).innerText =
-        `Position: ${state.torpedo_x_nm} NM, ${state.torpedo_y_nm} NM`;
-
-    document.getElementById(
-        "enemy-knots"
-    ).innerText =
-        `Speed: ${state.enemy_speed} knots`;
-
-    document.getElementById(
-        "enemy-distance"
-    ).innerText =
-        `Bearing to ship: ${state.torpedo_bearing}°`;
-
-    document.getElementById(
-        "separation"
-    ).innerText =
-        `${state.separation_nm} NM`;
+    document.getElementById("friendly-position").innerText = `Position: ${state.ship_x_nm} NM, ${state.ship_y_nm} NM`;
+    document.getElementById("friendly-knots").innerText = `Speed: ${state.friendly_speed} knots`;
+    document.getElementById("friendly-bearing").innerText = `Bearing: ${state.bearing}°`;
+    document.getElementById("friendly-distance").innerText = `Distance to Objective point: ${state.distance_to_objective_point_nm} NM`;
+    document.getElementById("friendly-destination").innerText = `Objective point: ${state.objective_point_x_nm} NM, ${state.objective_point_y_nm} NM`;
+    document.getElementById("enemy-position").innerText = `Position: ${state.torpedo_x_nm} NM, ${state.torpedo_y_nm} NM`;
+    document.getElementById("enemy-knots").innerText = `Speed: ${state.enemy_speed} knots`;
+    document.getElementById("enemy-distance").innerText = `Bearing to ship: ${state.torpedo_bearing}°`;
+    document.getElementById("separation").innerText = `${state.separation_nm} NM`;
 }
-
-/* =========================
-   MESSAGE LOG
-========================= */
 
 function updateMessageLog(state) {
-
-    const messageLog =
-        document.getElementById("message-log");
-
-    if (!messageLog) return;
-
-    if (!state.current_message) return;
-
-    /* prevent duplicate messages */
-    const lastMessage =
-        messageLog.lastElementChild?.innerText;
-
-    if (lastMessage === state.current_message) {
-        return;
-    }
-
-    const message =
-        document.createElement("p");
-
-    message.innerText =
-        state.current_message;
-
-    messageLog.appendChild(message);
-
-    /* auto scroll to newest message */
-    messageLog.scrollTop =
-        messageLog.scrollHeight;
+    const log = document.getElementById("message-log");
+    if (!log || !state.current_message) return;
+    if (log.innerText.includes("No messages yet.")) log.innerHTML = "";
+    const last = log.lastElementChild?.innerText;
+    if (last === state.current_message) return;
+    const p = document.createElement("p");
+    p.innerText = state.current_message;
+    log.appendChild(p);
+    log.scrollTop = log.scrollHeight;
 }
-
-/* =========================
-   SEA PLOT
-========================= */
 
 function updateSeaPlot(state) {
 
@@ -338,8 +144,8 @@ function updateSeaPlot(state) {
     const enemy =
         document.getElementById("enemy-unit");
 
-    const safeZone =
-        document.getElementById("safe-zone");
+    const objectivePointsLayer =
+        document.getElementById("objective-points-layer");
 
     const minX = state.plot_bounds.min_x;
     const maxX = state.plot_bounds.max_x;
@@ -348,18 +154,61 @@ function updateSeaPlot(state) {
     const maxY = state.plot_bounds.max_y;
 
     function scaleX(x) {
-
         return (
             ((x - minX) / (maxX - minX)) * 100
         );
     }
 
     function scaleY(y) {
-
         return (
             100 - (((y - minY) / (maxY - minY)) * 100)
         );
     }
+
+    objectivePointsLayer.innerHTML = "";
+	
+
+    state.objective_points.forEach(zone => {
+		
+
+
+		
+        const div = document.createElement("div");
+
+        const isSelected =
+            zone.id === state.selected_objective_point.id;
+
+        div.className = isSelected
+            ? "objective-point selected-objective-point"
+            : "objective-point rejected-objective-point";
+
+        div.innerHTML = `
+            <span>
+                OP ${zone.id}<br>
+                ${zone.bearing}°
+            </span>
+        `;
+
+        div.style.left =
+            `${scaleX(zone.x)}%`;
+
+        div.style.top =
+            `${scaleY(zone.y)}%`;
+
+        div.style.transform =
+            "translate(-50%, -50%)";
+
+        objectivePointsLayer.appendChild(div);
+		
+		
+		console.log({
+			zone,
+			selected: state.selected_objective_point,
+			layer: objectivePointsLayer
+		});
+		
+		
+    });
 
     friendly.style.left =
         `${scaleX(state.ship_x_nm)}%`;
@@ -373,255 +222,284 @@ function updateSeaPlot(state) {
     enemy.style.top =
         `${scaleY(state.torpedo_y_nm)}%`;
 
-    safeZone.style.left =
-        `${scaleX(state.safe_zone_x_nm)}%`;
-
-    safeZone.style.top =
-        `${scaleY(state.safe_zone_y_nm)}%`;
-
     friendly.style.transform =
         "translate(-50%, -50%)";
 
     enemy.style.transform =
         "translate(-50%, -50%)";
-
-    safeZone.style.transform =
-        "translate(-50%, -50%)";
 }
 
-/* =========================
-   START
-========================= */
+function drawSingleChart(canvasId, data, keyA, keyB, title) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !data.length) return;
+
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const padLeft = 55;
+    const padRight = 25;
+    const padTop = 35;
+    const padBottom = 45;
+
+    const values = data.flatMap(d => [
+        Number(d[keyA]),
+        Number(d[keyB])
+    ]);
+
+    const maxMinute = Math.max(1, ...data.map(d => Number(d.minute)));
+    const minVal = Math.min(0, ...values);
+    const maxVal = Math.max(100, ...values);
+
+    const plotWidth = canvas.width - padLeft - padRight;
+    const plotHeight = canvas.height - padTop - padBottom;
+
+    const x = minute =>
+        padLeft + (minute / maxMinute) * plotWidth;
+
+    const y = value =>
+        padTop + ((maxVal - value) / (maxVal - minVal)) * plotHeight;
+
+    // background
+    ctx.fillStyle = "#0b2f4a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // title
+    ctx.fillStyle = "white";
+    ctx.font = "14px Arial";
+    ctx.fillText(title, padLeft, 20);
+
+    // grid + y numbers
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.fillStyle = "white";
+    ctx.font = "11px Arial";
+
+    for (let i = 0; i <= 5; i++) {
+        const value = minVal + ((maxVal - minVal) / 5) * i;
+        const py = y(value);
+
+        ctx.beginPath();
+        ctx.moveTo(padLeft, py);
+        ctx.lineTo(canvas.width - padRight, py);
+        ctx.stroke();
+
+        ctx.fillText(value.toFixed(0), 8, py + 4);
+    }
+
+    // x numbers
+    for (let i = 0; i <= 5; i++) {
+        const minute = (maxMinute / 5) * i;
+        const px = x(minute);
+
+        ctx.beginPath();
+        ctx.moveTo(px, padTop);
+        ctx.lineTo(px, canvas.height - padBottom);
+        ctx.stroke();
+
+        ctx.fillText(minute.toFixed(0), px - 8, canvas.height - 18);
+    }
+
+    // axes
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    ctx.moveTo(padLeft, padTop);
+    ctx.lineTo(padLeft, canvas.height - padBottom);
+    ctx.lineTo(canvas.width - padRight, canvas.height - padBottom);
+    ctx.stroke();
+
+    ctx.fillText("Minutes", canvas.width / 2 - 20, canvas.height - 5);
+    ctx.fillText("NM", 12, padTop - 10);
+
+    function drawLine(key, colour) {
+        ctx.strokeStyle = colour;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        data.forEach((d, index) => {
+            const px = x(Number(d.minute));
+            const py = y(Number(d[key]));
+
+            if (index === 0) {
+                ctx.moveTo(px, py);
+            } else {
+                ctx.lineTo(px, py);
+            }
+        });
+
+        ctx.stroke();
+    }
+
+    drawLine(keyA, "lime");
+    drawLine(keyB, "red");
+
+    // legend
+    ctx.font = "12px Arial";
+    ctx.fillStyle = "lime";
+    ctx.fillText("Ship", padLeft + 10, 38);
+
+    ctx.fillStyle = "red";
+    ctx.fillText("Torpedo", padLeft + 65, 38);
+}
+
+
+function drawSingleMetricChart(canvasId, data, key, title) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !data.length) return;
+
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const padLeft = 55;
+    const padRight = 25;
+    const padTop = 35;
+    const padBottom = 45;
+
+    const values = data.map(d => Number(d[key]));
+    const maxMinute = Math.max(1, ...data.map(d => Number(d.minute)));
+    const minVal = 0;
+    const maxVal = Math.max(1, ...values);
+
+    const plotWidth = canvas.width - padLeft - padRight;
+    const plotHeight = canvas.height - padTop - padBottom;
+
+    const x = minute =>
+        padLeft + (minute / maxMinute) * plotWidth;
+
+    const y = value =>
+        padTop + ((maxVal - value) / (maxVal - minVal)) * plotHeight;
+
+    ctx.fillStyle = "#0b2f4a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "white";
+    ctx.font = "14px Arial";
+    ctx.fillText(title, padLeft, 20);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.fillStyle = "white";
+    ctx.font = "11px Arial";
+
+    for (let i = 0; i <= 5; i++) {
+        const value = minVal + ((maxVal - minVal) / 5) * i;
+        const py = y(value);
+
+        ctx.beginPath();
+        ctx.moveTo(padLeft, py);
+        ctx.lineTo(canvas.width - padRight, py);
+        ctx.stroke();
+
+        ctx.fillText(value.toFixed(0), 8, py + 4);
+    }
+
+    for (let i = 0; i <= 5; i++) {
+        const minute = (maxMinute / 5) * i;
+        const px = x(minute);
+
+        ctx.beginPath();
+        ctx.moveTo(px, padTop);
+        ctx.lineTo(px, canvas.height - padBottom);
+        ctx.stroke();
+
+        ctx.fillText(minute.toFixed(0), px - 8, canvas.height - 18);
+    }
+
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    ctx.moveTo(padLeft, padTop);
+    ctx.lineTo(padLeft, canvas.height - padBottom);
+    ctx.lineTo(canvas.width - padRight, canvas.height - padBottom);
+    ctx.stroke();
+
+    ctx.fillText("Minutes", canvas.width / 2 - 20, canvas.height - 5);
+    ctx.fillText("NM", 12, padTop - 10);
+
+    ctx.strokeStyle = "lime";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    data.forEach((d, index) => {
+        const px = x(Number(d.minute));
+        const py = y(Number(d[key]));
+
+        if (index === 0) {
+            ctx.moveTo(px, py);
+        } else {
+            ctx.lineTo(px, py);
+        }
+    });
+
+    ctx.stroke();
+}
+
+
+function drawCharts(data) {
+    if (!data.length) return;
+
+    drawSingleMetricChart(
+        "x-chart",
+        data,
+        "ship_distance_to_objective_point_nm",
+        "Ship distance to Objective point over time"
+    );
+
+    drawSingleMetricChart(
+        "y-chart",
+        data,
+        "torpedo_distance_to_ship_nm",
+        "Torpedo distance to ship over time"
+    );
+}
 
 function startSimulation() {
-
     if (running) return;
-
-    document.getElementById(
-        "simulation-view"
-    ).scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-    });
-
+    document.getElementById("simulation-view").scrollIntoView({behavior: "smooth", block: "center"});
     running = true;
-
     interval = setInterval(async () => {
-
-        const response =
-            await fetch("/tick", {
-                method: "POST"
-            });
-
-        const state =
-            await response.json();
-
+        const state = await fetch("/tick", {method: "POST"}).then(r => r.json());
         render(state);
-
-        if (state.finished) {
-            stopSimulation();
-        }
-
-    }, 500);
+        if (state.finished) stopSimulation();
+    }, 100);
 }
-
-/* =========================
-   STOP
-========================= */
-
-function stopSimulation() {
-
-    running = false;
-
-    if (interval) {
-        clearInterval(interval);
-    }
-}
-
-/* =========================
-   RESET
-========================= */
-
-function resetSim() {
-
-    fetch("/reset", {
-        method: "POST"
-    })
-    .then(() => location.reload());
-}
-
-/* =========================
-   COLLAPSIBLE SPEED PANEL
-========================= */
+function stopSimulation() { running = false; if (interval) clearInterval(interval); }
+function resetSim() { fetch("/reset", {method: "POST"}).then(() => location.reload()); }
 
 function toggleSpeedPanel() {
-
-    const content =
-        document.getElementById(
-            "speed-panel-content"
-        );
-
-    const button =
-        document.querySelector(
-            ".section-toggle"
-        );
-
+    const content = document.getElementById("speed-panel-content");
+    const button = document.querySelector(".section-toggle");
     content.classList.toggle("closed");
-
-    if (
-        content.classList.contains(
-            "closed"
-        )
-    ) {
-
-        button.innerText =
-            "▶ Speed Simulations";
-
-    } else {
-
-        button.innerText =
-            "▼ Speed Simulations";
-    }
+    button.innerText = content.classList.contains("closed") ? "▶ Speed Simulations" : "▼ Speed Simulations";
 }
 
-/* =========================
-   GENERATE SPEED SWEEP
-========================= */
-
 async function prepareSpeedSweep() {
-
-    const resultsDiv =
-        document.getElementById(
-            "speed-sweep-results"
-        );
-
-    resultsDiv.innerHTML =
-        "<p>Generating simulations...</p>";
-
+    const resultsDiv = document.getElementById("speed-sweep-results");
+    resultsDiv.innerHTML = "<p>Generating simulations...</p>";
     const formData = new FormData();
-
-    formData.append(
-        "scenario_id",
-        "{{ sim.scenario['id'] }}"
-    );
-
-    const response = await fetch(
-        "/prepare-speed-sweep",
-        {
-            method: "POST",
-            body: formData
-        }
-    );
-
-    const result = await response.json();
-
-    let html = `
-        <h3>${result.message}</h3>
-    `;
-
-    html += `
-        <table border="1"
-               cellpadding="6"
-               cellspacing="0">
-    `;
-
-    html += `
-        <thead>
-            <tr>
-                <th>Ship Speed</th>
-                <th>Minutes</th>
-                <th>Result</th>
-                <th>Load</th>
-            </tr>
-        </thead>
-        <tbody>
-    `;
-
+    formData.append("scenario_id", "{{ sim.scenario['id'] }}");
+    const result = await fetch("/prepare-speed-sweep", {method: "POST", body: formData}).then(r => r.json());
+    let html = `<h3>${result.message}</h3><table><thead><tr><th>Ship Speed</th><th>Minutes</th><th>Result</th><th>CSV</th><th>Load</th></tr></thead><tbody>`;
     result.results.forEach(row => {
-
-        html += `
-            <tr>
-                <td>${row.speed} knots</td>
-                <td>${row.ticks}</td>
-                <td>${row.result}</td>
-                <td>
-                    <button
-                        onclick="
-                            playSpeedSimulation(
-                                ${row.speed}
-                            )
-                        "
-                    >
-                        Load
-                    </button>
-                </td>
-            </tr>
-        `;
+        html += `<tr><td>${row.speed} knots</td><td>${row.ticks}</td><td>${row.result}</td><td><a href="/logs/${row.log_file}">Download</a></td><td><button onclick="playSpeedSimulation(${row.speed})">Load</button></td></tr>`;
     });
-
-    html += `
-        </tbody>
-        </table>
-    `;
-
+    html += "</tbody></table>";
     resultsDiv.innerHTML = html;
 }
 
-/* =========================
-   LOAD SPEED SIMULATION
-========================= */
-
 async function playSpeedSimulation(speed) {
-
     stopSimulation();
-
     const formData = new FormData();
-
-    formData.append(
-        "scenario_id",
-        "{{ sim.scenario['id'] }}"
-    );
-
-    formData.append(
-        "speed",
-        speed
-    );
-
-    await fetch(
-        "/play-speed-simulation",
-        {
-            method: "POST",
-            body: formData
-        }
-    );
-
-    const response =
-        await fetch("/state");
-
-    const state =
-        await response.json();
-
+    formData.append("scenario_id", "{{ sim.scenario['id'] }}");
+    formData.append("speed", speed);
+    await fetch("/play-speed-simulation", {method: "POST", body: formData});
+    const state = await fetch("/state").then(r => r.json());
+    document.getElementById("message-log").innerHTML = "";
     render(state);
-
-    document.getElementById(
-        "status"
-    ).innerHTML =
-        `Loaded ${speed} knot simulation. Press <span style="color: limegreen; font-weight: bold;">Play</span> to run.`;
-
-    document.getElementById(
-        "play-controls"
-    ).scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-    });
+    document.getElementById("status").innerHTML = `Loaded ${speed} knot simulation. Press <span style="color: limegreen; font-weight: bold;">Play</span> to run.`;
+    document.getElementById("play-controls").scrollIntoView({behavior: "smooth", block: "center"});
 }
 
-/* =========================
-   INITIAL LOAD
-========================= */
-
 loadInitialState();
-
 </script>
-
 {% endblock %}

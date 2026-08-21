@@ -1,0 +1,60 @@
+SAFE ZONE ANALYSIS
+============================================================
+
+Scenario: Scenario Data - OPERATION TRIDENT
+Selected Safe Zone: 1
+
+------------------------------------------------------------
+Safe Zone 1
+Bearing: 0.0°
+Coordinates: (20.0, 140.0)
+Outcome: FAILED
+Minutes: 85
+Final Separation: 0.63 NM
+Reason: Selected because it achieved the best survivability score.
+
+------------------------------------------------------------
+Safe Zone 2
+Bearing: 60.0°
+Coordinates: (106.6, 90.0)
+Outcome: FAILED
+Minutes: 83
+Final Separation: 0.73 NM
+Reason: Rejected because the torpedo intercepted the ship before arrival.
+
+------------------------------------------------------------
+Safe Zone 6
+Bearing: 300.0°
+Coordinates: (-66.6, 90.0)
+Outcome: FAILED
+Minutes: 60
+Final Separation: 0.55 NM
+Reason: Rejected because the torpedo intercepted the ship before arrival.
+
+------------------------------------------------------------
+Safe Zone 3
+Bearing: 120.0°
+Coordinates: (106.6, -10.0)
+Outcome: FAILED
+Minutes: 56
+Final Separation: 0.75 NM
+Reason: Rejected because the torpedo intercepted the ship before arrival.
+
+------------------------------------------------------------
+Safe Zone 5
+Bearing: 240.0°
+Coordinates: (-66.6, -10.0)
+Outcome: FAILED
+Minutes: 33
+Final Separation: 0.94 NM
+Reason: Rejected because the torpedo intercepted the ship before arrival.
+
+------------------------------------------------------------
+Safe Zone 4
+Bearing: 180.0°
+Coordinates: (20.0, -60.0)
+Outcome: FAILED
+Minutes: 32
+Final Separation: 0.46 NM
+Reason: Rejected because the torpedo intercepted the ship before arrival.
+
